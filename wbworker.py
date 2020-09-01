@@ -84,7 +84,7 @@ class designSystem:
 			path = designSystem.path.format(self.case())
 		self.mesh.SendCommand(Command = designSystem.cmd.format(path))
 
-	def export_cyclic(self, h_keys = list(heights.keys()), p_keys = list(pitches.keys()), l_keys = list(layers.keys()), multiplyers=[1]):
+	def export_cyclic(self, h_keys = list(heights.keys()), p_keys = list(pitches.keys()), l_keys = list(layers.keys()), multiplyers = [1]):
 		self.mesh.Edit()
 
 		for h_key in h_keys:
@@ -121,3 +121,9 @@ sysStab	= designSystem(GetSystem(Name='SYS 1'), 'STAB')
 sysRec	= designSystem(GetSystem(Name='SYS'), 'REC')
 sysCut	= designSystem(GetSystem(Name='SYS 3'), 'CUT')
 sysFlat	= designSystem(GetSystem(Name='SYS 2'), 'FLAT')
+
+sysRec.export_cyclic(h_keys = ['10', '50'], p_keys = ['100'], 
+	l_keys = ['010', '100', '400'], multiplyers = [30])
+
+sysStab.export_cyclic(h_keys = ['10', '50'], p_keys = ['100'], 
+	l_keys = ['010', '100', '400'], multiplyers = [30])
