@@ -2,13 +2,9 @@ import os
 import math
 from glob import glob
 import pyjou as pj
-from functools import wraps
 
 class Helper():
 
-	'''
-	helper dictionaries
-	'''
 	heights = {
 		'10': .1e-3,
 		'20': .2e-3,
@@ -111,30 +107,30 @@ class Helper():
 	@staticmethod
 	def _kwarg_parse(kwarg, default):
 		return kwarg if kwarg != None else default
+		
+	@staticmethod
+	def _name_constructor(*args, prefix = None, suffix = None):
+		name = [str(x) for x in [prefix] + list(args) + [suffix] if x != None]
+		return '-'.join(name)
 
-	'''
-	build method
-	'''
 	def build(self, test_name, stab_name, **kwargs):
 
-		work_name = self._kwarg_parse(kwargs.get('work_name'), '')
+		prefixes = self._kwarg_parse(kwargs.get('prefixes'), [None])
+		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
 
 		self.job = 'build'
 		if not self.local:
 			self._cluster()
 
-		master = pj.root()
-		slave_names = []
+		master = pj.Journal()
+		names = []
 
-		'''
-		helper functions
-		'''
-		def sec_first(h_key, p_key, r_key):
-			first = pj.root()
+		def sec_first(name):
+			first = pj.Journal()
 			first.mesh.translate.set(x = Helper.pitches.get(
 				p_key), y = 0)
 			first.mesh.modify_zones.append_mesh.set(
-				path = '../msh/{}-{}-{}-{}.msh'.format(test_name, h_key, p_key, r_key))
+				path = f'../msh/{name}.msh')
 			first.mesh.modify_zones.merge_zones.set(
 				list_zones = ['fluid', 'fluid.1'])
 			first.mesh.modify_zones.merge_zones.set(
@@ -146,19 +142,20 @@ class Helper():
 			first.mesh.modify_zones.zone_name.set(
 				old_name = 'wall', new_name = 'wall-out')
 			first.mesh.modify_zones.fuse_face_zones.set(
-				list_zones = ['inlet', 'outlet.1'], fused_name = 'delete-me')
+				list_zones = ['inlet', 'outlet.1'], 
+				fused_name = 'delete-me')
 			first.mesh.modify_zones.merge_zones.set(
 				list_zones = ['interior', 'delete-me'])
 			first.mesh.modify_zones.zone_name.set(
 				old_name = 'inlet.1', new_name = 'inlet')
 			return first
 
-		def sec_nth(h_key, p_key, r_key):
-			nth = pj.root()
+		def sec_nth(name):
+			nth = pj.Journal()
 			nth.mesh.translate.set(
 				x = Helper.pitches.get(p_key), y = 0)
 			nth.mesh.modify_zones.append_mesh.set(
-				path = '../msh/{}-{}-{}-{}.msh'.format(test_name, h_key, p_key, r_key))
+				path = f'../msh/{name}.msh')
 			nth.mesh.modify_zones.merge_zones.set(
 				list_zones = ['fluid', 'fluid.1'])
 			nth.mesh.modify_zones.merge_zones.set(
@@ -178,19 +175,20 @@ class Helper():
 			nth.mesh.modify_zones.merge_zones.set(
 				list_zones = ['wall-solid', 'wall-solid.1'])
 			nth.mesh.modify_zones.fuse_face_zones.set(
-				list_zones = ['inlet', 'outlet.1'], fused_name = 'delete-me')
+				list_zones = ['inlet', 'outlet.1'], 
+				fused_name = 'delete-me')
 			nth.mesh.modify_zones.merge_zones.set(
 				list_zones = ['interior', 'delete-me'])
 			nth.mesh.modify_zones.zone_name.set(
 				old_name = 'inlet.1', new_name = 'inlet')
 			return nth
 
-		def sec_last(h_key, p_key, r_key):
-			last = pj.root()
+		def sec_last(name):
+			last = pj.Journal()
 			last.mesh.translate.set(
 				x = .1, y = 0)
 			last.mesh.modify_zones.append_mesh.set(
-				path = '../msh/{}-{}-{}-{}.msh'.format(stab_name, h_key, p_key, r_key))
+				path = f'../msh/{name}.msh')
 			last.mesh.modify_zones.merge_zones.set(
 				list_zones = ['fluid', 'fluid.1'])
 			last.mesh.modify_zones.merge_zones.set(
@@ -202,313 +200,234 @@ class Helper():
 			last.mesh.modify_zones.merge_zones.set(
 				list_zones = ['wall-out', 'wall'])
 			last.mesh.modify_zones.fuse_face_zones.set(
-				list_zones = ['inlet', 'outlet.1'], fused_name = 'delete-me')
+				list_zones = ['inlet', 'outlet.1'], 
+				fused_name = 'delete-me')
 			last.mesh.modify_zones.merge_zones.set(
 				list_zones = ['interior', 'delete-me'])
 			last.mesh.modify_zones.zone_name.set(
 				old_name = 'inlet.1', new_name = 'inlet')
 			return last
 
-		'''
-		main loop start
-		'''
-		for r_key in self.r_keys:
-			for h_key in self.h_keys: 
-				for p_key in self.p_keys:
+		def underloop(name, h_key, r_key):
+			jou = pj.Journal()
 
-					'''
-					setup
-					'''
-					slave = pj.root()
-					slave_name = '{}-{}-{}'.format(h_key, p_key, r_key)
+			jou.file.read_case.set(path = '../cas/start.cas')
+			jou.file.mesh_replace.set(
+				path = f'../msh/{stab_name}-{h_key}-100-{r_key}.msh')
 
-					slave.file.read_case.set(
-						path = '../cas/start.cas')
-					slave.file.mesh_replace.set(
-						path = '../msh/{}-{}-{}-{}.msh'.\
-						format(stab_name, h_key, '100', r_key))
+			jou += sec_first(f'{test_name}-{name}')
+			jou += sec_nth(f'{test_name}-{name}') * int(8e-1/Helper.pitches[p_key])
+			jou += sec_last(f'{stab_name}-{name}')
 
-					'''
-					stack build commands
-					'''
-					slave += sec_first(h_key, p_key, r_key)
-					numsec = int(8e-1/Helper.pitches[p_key])
-					nth = sec_nth(h_key, p_key, r_key)
-					for i in range(0, numsec - 1):
-						slave += nth
-					slave += sec_last(h_key, p_key, r_key)
+			jou.mesh.check.set()
+			jou.mesh.repair_improve.repair.set()
+			jou.define.boundary_conditions.velocity_inlet.set(
+				name = 'inlet', velocity = Helper.reynolds.get(r_key), 
+				temperature = 300)
+			jou.define.boundary_conditions.pressure_outlet.set(
+				name = 'outlet', temperature = 300)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-fluid', temperature = 1000)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-solid', temperature = 1000, fluid = False)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-out', temperature = 1000)
 
-					'''
-					setting bc
-					'''
-					slave.mesh.check.set()
-					slave.mesh.repair_improve.repair.set()
-					slave.define.boundary_conditions.velocity_inlet.set(
-						name = 'inlet', velocity = Helper.reynolds.get(r_key), temperature = 300)
-					slave.define.boundary_conditions.pressure_outlet.set(
-						name = 'outlet', temperature = 300)
-					slave.define.boundary_conditions.wall.set(
-						name = 'wall-fluid', temperature = 1000)
-					slave.define.boundary_conditions.wall.set(
-						name = 'wall-solid', temperature = 1000, fluid = False)
-					slave.define.boundary_conditions.wall.set(
-						name = 'wall-out', temperature = 1000)
-					slave.file.write_case.set(
-						path = '../cas/{}{}'.format(work_name, slave_name))
+			jou.file.write_case.set(path = f'../cas/{name}.cas')
+			jou.save(f'../cls/cmd-{name}.jou')	
 
-					'''
-					ending
-					'''
-					slave_name = 'cmd-{}.jou'.format(slave_name)
-					slave_names += [slave_name]
-					slave.save('../cls/{}'.format(slave_name))		
+		master = pj.Journal()
+		names = []
 
-		'''
-		saving all in a master file
-		'''
-		master.file.read_journal.set(path = slave_names)
+		for prefix in prefixes:
+			for r_key in self.r_keys:
+				for h_key in self.h_keys: 
+					for p_key in self.p_keys:
+						for suffix in suffixes:
+
+							name = self._name_constructor(h_key, p_key, r_key, prefix = prefix, suffix = suffix)
+							names += [name]
+							underloop(name, h_key, r_key)
+
+		master.file.read_journal.set(path = [f'../cls/{x}.jou' for x in names])
 		master.save(self.folder + '/cmd.jou')
 
-	'''
-	solve method
-	'''
 	def solve(self, **kwargs):
 
-		'''
-		parsing kwargs
-		'''
+		prefixes = self._kwarg_parse(kwargs.get('prefixes'), [None])
+		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
 		iters = self._kwarg_parse(kwargs.get('iters'), 1e3)
 		model = self._kwarg_parse(kwargs.get('model'), 'kw-sst')
-		work_name = self._kwarg_parse(kwargs.get('work_name'), '')
+		criteria = self._kwarg_parse(kwargs.get('criteria'), 1e-6)
 
 		self.job = 'solve'
 		if not self.local:
 			self._cluster()
 
-		master = pj.root()
-		slave_names = []
+		def underloop(name, r_key):
+			jou = pj.Journal()
 
-		'''
-		main loop start
-		'''
-		for r_key in self.r_keys:
-			for h_key in self.h_keys: 
-				for p_key in self.p_keys:
+			jou.file.read_case.set(
+				path = f'../cas/{name}.cas')
 
-					'''
-					setup
-					'''
-					slave = pj.root()
-					slave_name = '{}-{}-{}'.format(h_key, p_key, r_key)
+			jou.define.models.viscous.set(model = model)
+			jou.solve.monitors.residual.convergence_criteria.set(
+				criteria = [criteria for x in range(6)])
+			jou.surface.line_surface.set(
+				name = 'cut-1', x1 = .1, y1 = 0, x2 = .1, y2 = .005)
+			jou.surface.line_surface.set(
+				name = 'cut-2', x1 = .9, y1 = 0, x2 = .9, y2 = .005)
 
-					slave.file.read_case.set(
-						path = '../cas/{}{}.cas'.format(work_name, slave_name))
+			jou.define.boundary_conditions.velocity_inlet.set(
+				name = 'inlet', velocity = Helper.reynolds.get(r_key),
+				temperature = 300)
+			jou.define.boundary_conditions.pressure_outlet.set(
+				name = 'outlet', temperature = 300)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-fluid', temperature = 1000)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-solid', temperature = 1000, fluid = False)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-out', temperature = 1000)
 
-					'''
-					defining models
-					'''
-					slave.define.models.viscous.set(
-						model = model)
-					slave.solve.monitors.residual.convergence_criteria.set(
-						criteria = [1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-					slave.surface.line_surface.set(
-						name = 'cut-1', x1 = .1, y1 = 0, x2 = .1, y2 = .005)
-					slave.surface.line_surface.set(
-						name = 'cut-2', x1 = .9, y1 = 0, x2 = .9, y2 = .005)
+			jou.solve.initialize.compute_defaults.velocity_inlet.set(
+				name = 'inlet')
+			jou.solve.initialize.initialize_flow.set()
+			jou.solve.iterate.set(iters = iters)
 
-					'''
-					defining bc
-					'''
-					slave.define.boundary_conditions.velocity_inlet.set(
-						name = 'inlet', velocity = Helper.reynolds.get(r_key),
-						temperature = 300)
-					slave.define.boundary_conditions.pressure_outlet.set(
-						name = 'outlet', temperature = 300)
-					slave.define.boundary_conditions.wall.set(
-						name = 'wall-fluid', temperature = 1000)
-					slave.define.boundary_conditions.wall.set(
-						name = 'wall-solid', temperature = 1000, fluid = False)
-					slave.define.boundary_conditions.wall.set(
-						name = 'wall-out', temperature = 1000)
+			jou.report.surface_integrals.area.set(
+				path = f'../out/out-{name}.txt', 
+				list_zones = ['wall-fluid', 'wall-solid'])
+			jou.report.fluxes.heat_transfer.set(
+				path = f'../out/out-{name}.txt', 
+				all_zones = False, list_zones=['wall-fluid', 'wall-solid'])
+			jou.report.surface_integrals.facet_avg.set(
+				path = f'../out/out-{name}.txt', 
+				value = 'temperature', list_zones = 'axis')
+			jou.report.surface_integrals.facet_avg.set(
+				path = f'../out/out-{name}.txt', 
+				value = 'pressure', list_zones = ['cut-1', 'cut-2'])
+			
+			jou.file.write_case_data.set(path = f'../cas/{name}.cas')
+			jou.save(f'../cls/cmd-{name}.jou')
 
-					'''
-					solving
-					'''
-					slave.solve.initialize.compute_defaults.velocity_inlet.set(
-						name = 'inlet')
-					slave.solve.initialize.initialize_flow.set()
-					slave.solve.iterate.set(
-						iters = iters)
+		master = pj.Journal()
+		names = []
 
-					'''
-					reporting
-					'''
-					slave.report.surface_integrals.area.set(
-						path = '../out/out-{}{}.txt'.format(work_name, slave_name), 
-						list_zones = ['wall-fluid', 'wall-solid'])
-					slave.report.fluxes.heat_transfer.set(
-						path = '../out/out-{}{}.txt'.format(work_name, slave_name), 
-						all_zones = False, list_zones=['wall-fluid', 'wall-solid'])
-					slave.report.surface_integrals.facet_avg.set(
-						path = '../out/out-{}{}.txt'.format(work_name, slave_name), 
-						value = 'temperature', list_zones = 'axis')
-					slave.report.surface_integrals.facet_avg.set(
-						path = '../out/out-{}{}.txt'.format(work_name, slave_name), 
-						value = 'pressure', list_zones = ['cut-1', 'cut-2'])
-					
-					slave.file.write_case_data.set(
-						path = '../cas/{}{}.cas'.format(work_name, slave_name))
+		for prefix in prefixes:
+			for r_key in self.r_keys:
+				for h_key in self.h_keys: 
+					for p_key in self.p_keys:
+						for suffix in suffixes:
 
-					'''
-					ending
-					'''
-					slave_name = 'cmd-{}{}.jou'.format(work_name, slave_name)
-					slave_names += [slave_name]
-					slave.save('../cls/{}'.format(slave_name))
+							name = self._name_constructor(h_key, p_key, r_key, prefix = prefix, suffix = suffix)
+							names += [name]
+							underloop(name, r_key)
 
-		'''
-		saving all in a master file
-		'''
-		master.file.read_journal.set(path = slave_names)
+		master.file.read_journal.set(path = [f'../cls/{x}.jou' for x in names])
 		master.save(self.folder + '/cmd.jou')
 
+	def grind(self, **kwargs):
 
-	def grind(self, prefixes, **kwargs):
-
-		'''
-		parsing kwargs
-		'''
+		prefixes = self._kwarg_parse(kwargs.get('prefixes'), [None])
+		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
 		iters = self._kwarg_parse(kwargs.get('iters'), 1e3)
 		model = self._kwarg_parse(kwargs.get('model'), 'kw-sst')
-		work_name = self._kwarg_parse(kwargs.get('work_name'), '')
+		criteria = self._kwarg_parse(kwargs.get('criteria'), 1e-6)
 		test_points = self._kwarg_parse(kwargs.get('test_points'), {})
 
-		'''
-		if cluster
-		'''
 		self.job = 'grind'
 		if not self.local:
 			self._cluster()
 
-		'''
-		main journal setup
-		'''
-		master = pj.root()
-		slave_names = []
+		def underloop(name, r_key):
 
-		'''
-		main loop start
-		'''
-		for r_key in self.r_keys:
-			for h_key in self.h_keys: 
-				for p_key in self.p_keys:
-					for prefix in prefixes:
-
-						'''
-						setup
-						'''
-						slave = pj.root()
-						slave_name = '{}-{}-{}-{}'.format(h_key, p_key, r_key, prefix)
-
-						slave.file.read_case.set(
-							path = '../cas/start.cas')
-						slave.file.mesh_replace.set(
-							path = '../msh/{}{}.msh'.format(work_name, slave_name))
-						
-						'''
-						defining models
-						'''
-						slave.define.models.viscous.set(
-							model = model)
-						slave.solve.monitors.residual.convergence_criteria.set(
-							criteria = [1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-
-						for name, (x, y) in test_points.items():
-							slave.surface.point_surface.set(
-								name = name, x = x, y = y)
-
-						'''
-						defining bc
-						'''
-						slave.define.boundary_conditions.velocity_inlet.set( 
-							name = 'inlet', velocity = Helper.reynolds.get(r_key), temperature = 300)
-						slave.define.boundary_conditions.pressure_outlet.set(
-							name = 'outlet', temperature = 300)
-						slave.define.boundary_conditions.wall.set(
-							name = 'wall-fluid', temperature = 1000)
-						slave.define.boundary_conditions.wall.set(
-							name = 'wall-solid', temperature = 1000, fluid = False)
-
-						'''
-						solving
-						'''
-						slave.solve.initialize.compute_defaults.velocity_inlet.set(
-							name = 'inlet')
-						slave.solve.initialize.initialize_flow.set()
-						slave.solve.iterate.set(
-							iters = iters)
-
-						'''
-						reporting
-						'''
-						slave.report.fluxes.mass_flow.set(
-							path = '../out/out-{}{}.txt'.format(work_name, slave_name),
-							all_zones = False, list_zones = ['inlet', 'outlet'])
-						slave.report.fluxes.heat_transfer.set(
-							path = '../out/out-{}{}.txt'.format(work_name, slave_name),
-							all_zones = False, list_zones = ['wall-fluid', 'wall-solid', 'inlet', 'outlet'])
-						for item in list(test_points.keys()):
-							slave.report.surface_integrals.facet_avg.set(
-								path = '../out/out-{}{}.txt'.format(work_name, slave_name), value = 'temperature', list_zones = item)
-						slave.report.surface_integrals.facet_avg.set(
-							path = '../out/out-{}{}.txt'.format(work_name, slave_name), value = 'pressure', list_zones = ['inlet', 'outlet'])
-						
-						slave.file.write_case_data.set(
-							path = '../cas/{}{}.cas'.format(work_name, slave_name))
-
-						'''
-						ending
-						'''
-						slave_name = 'cmd-{}{}.jou'.format(work_name, slave_name)
-						slave_names += [slave_name]
-						slave.save('../cls/{}'.format(slave_name))
-
-		'''
-		saving all in a master file
-		'''
-		master.file.read_journal.set(path = slave_names)
-		master.save(self.folder + '/cmd.jou')
-
-	@staticmethod
-	def _file_eval(path):
-		vals = []
-		with open(path, 'r') as f:
-			for line in f.readlines():
-				for char in line.split():
-					try:
-						vals += [float(char)]
-					except:
-						continue
-		return (vals[2], vals[5], vals[6], vals[7] - vals[8])
+			jou = pj.Journal()
+			jou.file.read_case.set(path = '../cas/start.cas')
+			jou.file.mesh_replace.set(path = f'../msh/{name}.msh')
 			
+			jou.define.models.viscous.set(model = model)
+			jou.solve.monitors.residual.convergence_criteria.set(
+				criteria = [criteria for x in range(6)])
 
-	@staticmethod
-	def _name_constructor(*args, prefix = None, suffix = None):
-		name = [str(x) for x in [prefix] + list(args) + [suffix] if x != None]
-		return '-'.join(name)
+			for point, (x, y) in test_points.items():
+				jou.surface.point_surface.set(
+					name = point, x = x, y = y)
+
+			jou.define.boundary_conditions.velocity_inlet.set( 
+				name = 'inlet', velocity = Helper.reynolds.get(r_key), 
+				temperature = 300)
+			jou.define.boundary_conditions.pressure_outlet.set(
+				name = 'outlet', temperature = 300)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-fluid', temperature = 1000)
+			jou.define.boundary_conditions.wall.set(
+				name = 'wall-solid', temperature = 1000, fluid = False)
+
+			jou.solve.initialize.compute_defaults.velocity_inlet.set(
+				name = 'inlet')
+			jou.solve.initialize.initialize_flow.set()
+			jou.solve.iterate.set(iters = iters)
+
+			jou.report.fluxes.mass_flow.set(
+				path = f'../out/out-{name}.txt',
+				all_zones = False, list_zones = ['inlet', 'outlet'])
+			jou.report.fluxes.heat_transfer.set(
+				path = f'../out/out-{name}.txt',
+				all_zones = False, 
+				list_zones = ['wall-fluid', 'wall-solid', 'inlet', 'outlet'])
+			jou.report.surface_integrals.facet_avg.set(
+				path = f'../out/out-{name}.txt', value = 'temperature', 
+				list_zones = list(test_points.keys()))
+			jou.report.surface_integrals.facet_avg.set(
+				path = f'../out/out-{name}.txt', value = 'pressure', 
+				list_zones = ['inlet', 'outlet'])
+			
+			jou.file.write_case_data.set(path = f'../cas/{name}.cas')
+			jou.save(f'../cls/cmd-{name}.jou')
+
+		master = pj.Journal()
+		names = []
+
+		for prefix in prefixes:
+			for r_key in self.r_keys:
+				for h_key in self.h_keys: 
+					for p_key in self.p_keys:
+						for suffix in suffixes:
+
+							name = self._name_constructor(h_key, p_key, r_key, prefix = prefix, suffix = suffix)
+							names += [name]
+							underloop(name, r_key)
+
+		master.file.read_journal.set(path = [f'../cls/{x}.jou' for x in names])
+		master.save(self.folder + '/cmd.jou')
 
 	def evaluate(self, **kwargs):
 
+		prefixes = self._kwarg_parse(kwargs.get('prefixes'), [None])
 		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
-		work_name = self._kwarg_parse(kwargs.get('work_name'), None)
-		flt = self._kwarg_parse(kwargs.get('flt'), True)
+
+		def _file_eval(path):
+			vals = []
+			with open(path, 'r') as f:
+				for line in f.readlines():
+					for char in line.split():
+						try:
+							vals += [float(char)]
+						except:
+							continue
+			return (vals[2], vals[5], vals[6], vals[7] - vals[8])
+
+		def underloop(name, file):
+			vals = _file_eval(f'../out/out-{name}.txt')
+			vals = ['%.4f' % x for x in list(vals)]
+			file.write(f'{name}:\t' + '\t'.join(vals) + '\n')
 
 		with open('../out/out.txt', 'w') as f:
-			for h_key in self.h_keys:
-				for p_key in self.p_keys:
-					for r_key in self.r_keys:
-						for suffix in suffixes:
-							name = self._name_constructor(h_key, p_key, r_key, prefix = work_name, suffix = suffix)
-							vals = self._file_eval(f'../out/out-{name}.txt')
-							vals = ['%.4f' % x for x in list(vals)]
-							f.write(f'{name}:\t' + '\t'.join(vals) + '\n')
+			for prefix in prefixes:
+				for h_key in self.h_keys:
+					for p_key in self.p_keys:
+						for r_key in self.r_keys:
+							for suffix in suffixes:
+
+								underloop(self._name_constructor(h_key, p_key, r_key, prefix = prefix, suffix = suffix), f)

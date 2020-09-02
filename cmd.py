@@ -17,14 +17,13 @@ work_name 	= 'REC-'
 stab_name	= 'STAB'
 test_name	= 'REC'
 ''' ======================== '''
-turbulence_model		= 'ke-rng'
-wall_function			= 'standard'
-set_convergence			= True
-convergence_criteria	= 1e-6
-add_cuts				= True
-iterations				= 1000
+model	= 'ke-rng'
+wall	= 'standard'
+crit	= 1e-6
+iters	= 1000
 ''' ======================== '''
-prefixes	= [10, 20, 30, 40, 50, 75, 100, 150]
+prefixes	= [None]
+suffixes	= [None]
 test_points	= {
 	'point-1': (0.008, .0047),
 	'point-2': (0.009, .0047),
@@ -34,8 +33,11 @@ test_points	= {
 helper = Helper(folder = '../cls', cls_folder = cls_folder, 
 	local = is_local, hours = hours_count, partition = partition, cpus = num_cpus,
 	cyclic = is_cyclic, h_keys = h_keys, p_keys = p_keys, r_keys = r_keys)
-# helper.build(test_name, stab_name)
-# helper.solve(model = turbulence_model, iters = iterations)
-# helper.grind(prefixes, model = 'ke-realizible', 
-	# iters = '1000', test_points = test_points, work_name = 'REC')
-helper.evaluate()
+
+helper.build(test_name, stab_name, prefixes = prefixes, suffixes = suffixes)
+# helper.solve(prefixes = prefixes, suffixes = suffixes, 
+# 	model = model, iters = iters, criteria = crit)
+# helper.grind(prefixes = prefixes, suffixes = suffixes, 
+# 	model = model, iters = iters, criteria = crit, 
+# 	test_points = test_points)
+# helper.evaluate()
