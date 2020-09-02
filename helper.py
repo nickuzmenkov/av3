@@ -1,5 +1,4 @@
 import os
-import math
 from glob import glob
 import pyjou as pj
 
@@ -249,7 +248,7 @@ class Helper():
 							names += [name]
 							underloop(name, h_key, r_key)
 
-		master.file.read_journal.set(path = [f'../cls/{x}.jou' for x in names])
+		master.file.read_journal.set(path = [f'../cls/cmd-{x}.jou' for x in names])
 		master.save(self.folder + '/cmd.jou')
 
 	def solve(self, **kwargs):
@@ -324,7 +323,7 @@ class Helper():
 							names += [name]
 							underloop(name, r_key)
 
-		master.file.read_journal.set(path = [f'../cls/{x}.jou' for x in names])
+		master.file.read_journal.set(path = [f'../cls/cmd-{x}.jou' for x in names])
 		master.save(self.folder + '/cmd.jou')
 
 	def grind(self, **kwargs):
@@ -399,7 +398,7 @@ class Helper():
 							names += [name]
 							underloop(name, r_key)
 
-		master.file.read_journal.set(path = [f'../cls/{x}.jou' for x in names])
+		master.file.read_journal.set(path = [f'../cls/cmd-{x}.jou' for x in names])
 		master.save(self.folder + '/cmd.jou')
 
 	def evaluate(self, **kwargs):
@@ -407,7 +406,10 @@ class Helper():
 		prefixes = self._kwarg_parse(kwargs.get('prefixes'), [None])
 		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
 
-		def _file_eval(path):
+		def file_eval(path, r_key):
+
+			from math import pi
+
 			vals = []
 			with open(path, 'r') as f:
 				for line in f.readlines():
@@ -416,11 +418,15 @@ class Helper():
 							vals += [float(char)]
 						except:
 							continue
-			return (vals[2], vals[5], vals[6], vals[7] - vals[8])
+			
+			area, heat, temp, pres = vals[2], vals[5], vals[6], vals[7] - vals[8]
 
-		def underloop(name, file):
-			vals = _file_eval(f'../out/out-{name}.txt')
-			vals = ['%.4f' % x for x in list(vals)]
+			return [heat*1e-2/area/(1000 - temp)/0.0242, 2*pres*pi*1e-4/area/1.225/Helper.reynolds.get(r_key)**2]
+
+
+		def underloop(name, r_key, file):
+			vals = file_eval(f'../out/out-{name}.txt', r_key)
+			vals = ['%.4f' % x for x in vals]
 			file.write(f'{name}:\t' + '\t'.join(vals) + '\n')
 
 		with open('../out/out.txt', 'w') as f:
@@ -430,4 +436,5 @@ class Helper():
 						for r_key in self.r_keys:
 							for suffix in suffixes:
 
-								underloop(self._name_constructor(h_key, p_key, r_key, prefix = prefix, suffix = suffix), f)
+								name = self._name_constructor(h_key, p_key, r_key, prefix = prefix, suffix = suffix)
+								underloop(name, r_key, f)
