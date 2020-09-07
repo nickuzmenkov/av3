@@ -112,6 +112,17 @@ class Helper():
 		name = [str(x) for x in [prefix] + list(args) + [suffix] if x != None]
 		return '-'.join(name)
 
+	@staticmethod
+	def help(thing):
+		guide = {
+			'wall_function': ['enhanced-wall-treatment', 'scalable-wall-functions', 'non-equilibrium-wall-fn', 'menter-lechner', 'user-defined-wall-functions'],
+			'model': ['inviscid', 'laminar', 'k-kl-w', 'ke-realizible', 're-rng', 'ke-standard', 'kw-bsl', 'kw-geko', 'kw-sst', 'kw-standard', 'reynolds-stress-model', 'spalart-allmaras', 'sas', 'transition-sst', 'detached-eddy-simulation']
+		}
+		try:
+			print(f'Keyword "{thing}" has the following avaliable values:\n', ', '.join(guide[thing]), '\n')
+		except KeyError:
+			print(f'No help on "{thing}" keyword is avaliable.')
+
 	def build(self, test_name, stab_name, **kwargs):
 
 		prefixes = self._kwarg_parse(kwargs.get('prefixes'), [None])
@@ -125,94 +136,56 @@ class Helper():
 		names = []
 
 		def sec_first(name):
-			first = pj.Journal()
-			first.mesh.translate.set(x = Helper.pitches.get(
-				p_key), y = 0)
-			first.mesh.modify_zones.append_mesh.set(
-				path = f'../msh/{name}.msh')
-			first.mesh.modify_zones.merge_zones.set(
-				list_zones = ['fluid', 'fluid.1'])
-			first.mesh.modify_zones.merge_zones.set(
-				list_zones = ['axis', 'axis.1'])
-			first.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior', 'interior.1'])
-			first.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior-fluid', 'interior-fluid.1'])
-			first.mesh.modify_zones.zone_name.set(
-				old_name = 'wall', new_name = 'wall-out')
-			first.mesh.modify_zones.fuse_face_zones.set(
-				list_zones = ['inlet', 'outlet.1'], 
-				fused_name = 'delete-me')
-			first.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior', 'delete-me'])
-			first.mesh.modify_zones.zone_name.set(
-				old_name = 'inlet.1', new_name = 'inlet')
-			return first
+			jou = pj.Journal()
+			jou.mesh.translate.set(Helper.pitches.get(p_key), 0)
+			jou.mesh.modify_zones.append_mesh.set(f'../msh/{name}.msh')
+			jou.mesh.modify_zones.merge_zones.set('fluid', 'fluid.1')
+			jou.mesh.modify_zones.merge_zones.set('axis', 'axis.1')
+			jou.mesh.modify_zones.merge_zones.set('interior', 'interior.1')
+			jou.mesh.modify_zones.merge_zones.set('interior-fluid', 'interior-fluid.1')
+			jou.mesh.modify_zones.zone_name.set('wall', 'wall-out')
+			jou.mesh.modify_zones.fuse_face_zones.set('inlet', 'outlet.1', fused_name = 'delete-me')
+			jou.mesh.modify_zones.merge_zones.set('interior', 'delete-me')
+			jou.mesh.modify_zones.zone_name.set('inlet.1', 'inlet')
+			return jou
 
 		def sec_nth(name):
-			nth = pj.Journal()
-			nth.mesh.translate.set(
-				x = Helper.pitches.get(p_key), y = 0)
-			nth.mesh.modify_zones.append_mesh.set(
-				path = f'../msh/{name}.msh')
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['fluid', 'fluid.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['solid', 'solid.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['axis', 'axis.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior', 'interior.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior-fluid', 'interior-fluid.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior-solid', 'interior-solid.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['sides', 'sides.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['wall-fluid', 'wall-fluid.1'])
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['wall-solid', 'wall-solid.1'])
-			nth.mesh.modify_zones.fuse_face_zones.set(
-				list_zones = ['inlet', 'outlet.1'], 
-				fused_name = 'delete-me')
-			nth.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior', 'delete-me'])
-			nth.mesh.modify_zones.zone_name.set(
-				old_name = 'inlet.1', new_name = 'inlet')
-			return nth
+			jou = pj.Journal()
+			jou.mesh.translate.set(Helper.pitches.get(p_key), 0)
+			jou.mesh.modify_zones.append_mesh.set(f'../msh/{name}.msh')
+			jou.mesh.modify_zones.merge_zones.set('fluid', 'fluid.1')
+			jou.mesh.modify_zones.merge_zones.set('solid', 'solid.1')
+			jou.mesh.modify_zones.merge_zones.set('axis', 'axis.1')
+			jou.mesh.modify_zones.merge_zones.set('interior', 'interior.1')
+			jou.mesh.modify_zones.merge_zones.set('interior-fluid', 'interior-fluid.1')
+			jou.mesh.modify_zones.merge_zones.set('interior-solid', 'interior-solid.1')
+			jou.mesh.modify_zones.merge_zones.set('sides', 'sides.1')
+			jou.mesh.modify_zones.merge_zones.set('wall-fluid', 'wall-fluid.1')
+			jou.mesh.modify_zones.merge_zones.set('wall-solid', 'wall-solid.1')
+			jou.mesh.modify_zones.fuse_face_zones.set('inlet', 'outlet.1', fused_name = 'delete-me')
+			jou.mesh.modify_zones.merge_zones.set('interior', 'delete-me')
+			jou.mesh.modify_zones.zone_name.set('inlet.1', 'inlet')
+			return jou
 
 		def sec_last(name):
-			last = pj.Journal()
-			last.mesh.translate.set(
-				x = .1, y = 0)
-			last.mesh.modify_zones.append_mesh.set(
-				path = f'../msh/{name}.msh')
-			last.mesh.modify_zones.merge_zones.set(
-				list_zones = ['fluid', 'fluid.1'])
-			last.mesh.modify_zones.merge_zones.set(
-				list_zones = ['axis', 'axis.1'])
-			last.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior', 'interior.1'])
-			last.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior-fluid', 'interior-fluid.1'])
-			last.mesh.modify_zones.merge_zones.set(
-				list_zones = ['wall-out', 'wall'])
-			last.mesh.modify_zones.fuse_face_zones.set(
-				list_zones = ['inlet', 'outlet.1'], 
-				fused_name = 'delete-me')
-			last.mesh.modify_zones.merge_zones.set(
-				list_zones = ['interior', 'delete-me'])
-			last.mesh.modify_zones.zone_name.set(
-				old_name = 'inlet.1', new_name = 'inlet')
-			return last
+			jou = pj.Journal()
+			jou.mesh.translate.set(.1, 0)
+			jou.mesh.modify_zones.append_mesh.set(f'../msh/{name}.msh')
+			jou.mesh.modify_zones.merge_zones.set('fluid', 'fluid.1')
+			jou.mesh.modify_zones.merge_zones.set('axis', 'axis.1')
+			jou.mesh.modify_zones.merge_zones.set('interior', 'interior.1')
+			jou.mesh.modify_zones.merge_zones.set('interior-fluid', 'interior-fluid.1')
+			jou.mesh.modify_zones.merge_zones.set('wall-out', 'wall')
+			jou.mesh.modify_zones.fuse_face_zones.set('inlet', 'outlet.1', fused_name = 'delete-me')
+			jou.mesh.modify_zones.merge_zones.set('interior', 'delete-me')
+			jou.mesh.modify_zones.zone_name.set('inlet.1', 'inlet')
+			return jou
 
 		def underloop(name, h_key, r_key):
 			jou = pj.Journal()
 
-			jou.file.read_case.set(path = '../cas/start.cas')
-			jou.file.mesh_replace.set(
-				path = f'../msh/{stab_name}-{h_key}-100-{r_key}.msh')
+			jou.file.read_case.set('../cas/start.cas')
+			jou.file.mesh_replace.set(f'../msh/{stab_name}-{h_key}-100-{r_key}.msh')
 
 			jou += sec_first(f'{test_name}-{name}')
 			jou += sec_nth(f'{test_name}-{name}') * int(8e-1/Helper.pitches[p_key])
@@ -220,19 +193,15 @@ class Helper():
 
 			jou.mesh.check.set()
 			jou.mesh.repair_improve.repair.set()
-			jou.define.boundary_conditions.velocity_inlet.set(
-				name = 'inlet', velocity = Helper.reynolds.get(r_key), 
-				temperature = 300)
-			jou.define.boundary_conditions.pressure_outlet.set(
-				name = 'outlet', temperature = 300)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-fluid', temperature = 1000)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-solid', temperature = 1000, fluid = False)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-out', temperature = 1000)
+			jou.surface.line_surface.set('cut-1', .1, 0, .1, .005)
+			jou.surface.line_surface.set('cut-2', .9, 0, .9, .005)
+			jou.define.boundary_conditions.velocity_inlet.set('inlet', Helper.reynolds.get(r_key), 300)
+			jou.define.boundary_conditions.pressure_outlet.set('outlet', 300)
+			jou.define.boundary_conditions.wall.set('wall-fluid', 1000)
+			jou.define.boundary_conditions.wall.set('wall-solid', 1000, fluid = False)
+			jou.define.boundary_conditions.wall.set('wall-out', 1000)
 
-			jou.file.write_case.set(path = f'../cas/{name}.cas')
+			jou.file.write_case.set(f'../cas/{name}.cas')
 			jou.save(f'../cls/cmd-{name}.jou')	
 
 		master = pj.Journal()
@@ -248,7 +217,7 @@ class Helper():
 							names += [name]
 							underloop(name, h_key, r_key)
 
-		master.file.read_journal.set(path = [f'../cls/cmd-{x}.jou' for x in names])
+		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def solve(self, **kwargs):
@@ -257,6 +226,7 @@ class Helper():
 		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
 		iters = self._kwarg_parse(kwargs.get('iters'), 1e3)
 		model = self._kwarg_parse(kwargs.get('model'), 'kw-sst')
+		wall_function = self._kwarg_parse(kwargs.get('wall_function'), 'enhanced-wall-treatment')
 		criteria = self._kwarg_parse(kwargs.get('criteria'), 1e-6)
 
 		self.job = 'solve'
@@ -266,48 +236,33 @@ class Helper():
 		def underloop(name, r_key):
 			jou = pj.Journal()
 
-			jou.file.read_case.set(
-				path = f'../cas/{name}.cas')
+			jou.file.read_case.set(f'../cas/{name}.cas')
 
-			jou.define.models.viscous.set(model = model)
-			jou.solve.monitors.residual.convergence_criteria.set(
-				criteria = [criteria for x in range(6)])
-			jou.surface.line_surface.set(
-				name = 'cut-1', x1 = .1, y1 = 0, x2 = .1, y2 = .005)
-			jou.surface.line_surface.set(
-				name = 'cut-2', x1 = .9, y1 = 0, x2 = .9, y2 = .005)
+			jou.define.models.viscous.set(model)
+			if model != 'kw-standard' or 'kw-sst':
+				if wall_function == 'standard':
+					jou.define.models.viscous.near_wall_treatment.set('enhanced-wall-treatment')
+					jou.define.models.viscous.near_wall_treatment.set('enhanced-wall-treatment no')
+				else:
+					jou.define.models.viscous.near_wall_treatment.set(wall_function)
+			jou.solve.monitors.residual.convergence_criteria.set(1e-6)
 
-			jou.define.boundary_conditions.velocity_inlet.set(
-				name = 'inlet', velocity = Helper.reynolds.get(r_key),
-				temperature = 300)
-			jou.define.boundary_conditions.pressure_outlet.set(
-				name = 'outlet', temperature = 300)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-fluid', temperature = 1000)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-solid', temperature = 1000, fluid = False)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-out', temperature = 1000)
+			jou.define.boundary_conditions.velocity_inlet.set('inlet', Helper.reynolds.get(r_key), 300)
+			jou.define.boundary_conditions.pressure_outlet.set('outlet', 300)
+			jou.define.boundary_conditions.wall.set('wall-fluid', 1000)
+			jou.define.boundary_conditions.wall.set('wall-solid', 1000, fluid = False)
+			jou.define.boundary_conditions.wall.set('wall-out', 1000)
 
-			jou.solve.initialize.compute_defaults.velocity_inlet.set(
-				name = 'inlet')
+			jou.solve.initialize.compute_defaults.velocity_inlet.set('inlet')
 			jou.solve.initialize.initialize_flow.set()
-			jou.solve.iterate.set(iters = iters)
+			jou.solve.iterate.set(iters)
 
-			jou.report.surface_integrals.area.set(
-				path = f'../out/out-{name}.txt', 
-				list_zones = ['wall-fluid', 'wall-solid'])
-			jou.report.fluxes.heat_transfer.set(
-				path = f'../out/out-{name}.txt', 
-				all_zones = False, list_zones=['wall-fluid', 'wall-solid'])
-			jou.report.surface_integrals.facet_avg.set(
-				path = f'../out/out-{name}.txt', 
-				value = 'temperature', list_zones = 'axis')
-			jou.report.surface_integrals.facet_avg.set(
-				path = f'../out/out-{name}.txt', 
-				value = 'pressure', list_zones = ['cut-1', 'cut-2'])
+			jou.report.surface_integrals.area.set(f'../out/out-{name}.txt', 'wall-fluid', 'wall-solid')
+			jou.report.fluxes.heat_transfer.set(f'../out/out-{name}.txt', 'wall-fluid', 'wall-solid')
+			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'temperature', 'axis')
+			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'pressure', 'cut-1', 'cut-2')
 			
-			jou.file.write_case_data.set(path = f'../cas/{name}.cas')
+			jou.file.write_case_data.set(f'../cas/{name}.cas')
 			jou.save(f'../cls/cmd-{name}.jou')
 
 		master = pj.Journal()
@@ -323,7 +278,7 @@ class Helper():
 							names += [name]
 							underloop(name, r_key)
 
-		master.file.read_journal.set(path = [f'../cls/cmd-{x}.jou' for x in names])
+		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def grind(self, **kwargs):
@@ -332,6 +287,7 @@ class Helper():
 		suffixes = self._kwarg_parse(kwargs.get('suffixes'), [None])
 		iters = self._kwarg_parse(kwargs.get('iters'), 1e3)
 		model = self._kwarg_parse(kwargs.get('model'), 'kw-sst')
+		wall_function = self._kwarg_parse(kwargs.get('wall_function'), 'enhanced-wall-treatment')
 		criteria = self._kwarg_parse(kwargs.get('criteria'), 1e-6)
 		test_points = self._kwarg_parse(kwargs.get('test_points'), {})
 
@@ -342,47 +298,35 @@ class Helper():
 		def underloop(name, r_key):
 
 			jou = pj.Journal()
-			jou.file.read_case.set(path = '../cas/start.cas')
-			jou.file.mesh_replace.set(path = f'../msh/{name}.msh')
+			jou.file.read_case.set('../cas/start.cas')
+			jou.file.mesh_replace.set(f'../msh/{name}.msh')
 			
-			jou.define.models.viscous.set(model = model)
-			jou.solve.monitors.residual.convergence_criteria.set(
-				criteria = [criteria for x in range(6)])
-
+			jou.define.models.viscous.set(model)
+			if model != 'kw-standard' or 'kw-sst':
+				if wall_function == 'standard':
+					jou.define.models.viscous.near_wall_treatment.set('enhanced-wall-treatment')
+					jou.define.models.viscous.near_wall_treatment.set('enhanced-wall-treatment no')
+				else:
+					jou.define.models.viscous.near_wall_treatment.set(wall_function)
+			jou.solve.monitors.residual.convergence_criteria.set(1e-6)
 			for point, (x, y) in test_points.items():
-				jou.surface.point_surface.set(
-					name = point, x = x, y = y)
+				jou.surface.point_surface.set(point, x, y)
 
-			jou.define.boundary_conditions.velocity_inlet.set( 
-				name = 'inlet', velocity = Helper.reynolds.get(r_key), 
-				temperature = 300)
-			jou.define.boundary_conditions.pressure_outlet.set(
-				name = 'outlet', temperature = 300)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-fluid', temperature = 1000)
-			jou.define.boundary_conditions.wall.set(
-				name = 'wall-solid', temperature = 1000, fluid = False)
+			jou.define.boundary_conditions.velocity_inlet.set('inlet', Helper.reynolds.get(r_key), 300)
+			jou.define.boundary_conditions.pressure_outlet.set('outlet', 300)
+			jou.define.boundary_conditions.wall.set('wall-fluid', 1000)
+			jou.define.boundary_conditions.wall.set('wall-solid', 1000, False)
 
-			jou.solve.initialize.compute_defaults.velocity_inlet.set(
-				name = 'inlet')
+			jou.solve.initialize.compute_defaults.velocity_inlet.set('inlet')
 			jou.solve.initialize.initialize_flow.set()
-			jou.solve.iterate.set(iters = iters)
+			jou.solve.iterate.set(iters)
 
-			jou.report.fluxes.mass_flow.set(
-				path = f'../out/out-{name}.txt',
-				all_zones = False, list_zones = ['inlet', 'outlet'])
-			jou.report.fluxes.heat_transfer.set(
-				path = f'../out/out-{name}.txt',
-				all_zones = False, 
-				list_zones = ['wall-fluid', 'wall-solid', 'inlet', 'outlet'])
-			jou.report.surface_integrals.facet_avg.set(
-				path = f'../out/out-{name}.txt', value = 'temperature', 
-				list_zones = list(test_points.keys()))
-			jou.report.surface_integrals.facet_avg.set(
-				path = f'../out/out-{name}.txt', value = 'pressure', 
-				list_zones = ['inlet', 'outlet'])
+			jou.report.fluxes.mass_flow.set(f'../out/out-{name}.txt', 'inlet', 'outlet')
+			jou.report.fluxes.heat_transfer.set(f'../out/out-{name}.txt', 'wall-fluid', 'wall-solid', 'inlet', 'outlet')
+			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'temperature', ' '.join(list(test_points.keys())))
+			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'pressure', 'inlet', 'outlet')
 			
-			jou.file.write_case_data.set(path = f'../cas/{name}.cas')
+			jou.file.write_case_data.set(f'../cas/{name}.cas')
 			jou.save(f'../cls/cmd-{name}.jou')
 
 		master = pj.Journal()
@@ -398,7 +342,7 @@ class Helper():
 							names += [name]
 							underloop(name, r_key)
 
-		master.file.read_journal.set(path = [f'../cls/cmd-{x}.jou' for x in names])
+		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def evaluate(self, **kwargs):

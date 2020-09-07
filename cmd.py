@@ -23,14 +23,15 @@ test_name	= 'REC'
 ''' ======================== '''
 
 model	= 'ke-rng'
+wall_fcn = 'enhanced-wall-treatment'
 wall	= 'standard'
 crit	= 1e-6
 iters	= 1000
 ''' ======================== '''
 
-prefixes	= [None]
-suffixes	= [None]
-test_points	= {
+prefixes = [None]
+suffixes = [None]
+test_points = { 
 	'point-1': (0.008, .0047),
 	'point-2': (0.009, .0047),
 	'point-3': (0.010, .0047)
@@ -41,10 +42,13 @@ helper = Helper(folder = '../cls', cls_folder = cls_folder,
 	local = is_local, hours = hours_count, partition = partition, cpus = num_cpus,
 	cyclic = is_cyclic, h_keys = h_keys, p_keys = p_keys, r_keys = r_keys)
 
+helper.evaluate()
+
 # helper.build(test_name, stab_name, prefixes = prefixes, suffixes = suffixes)
-# helper.solve(prefixes = prefixes, suffixes = suffixes, 
-	# model = model, iters = iters, criteria = crit)
+
+helper.solve(prefixes = prefixes, suffixes = suffixes, 
+	model = model, wall_function = wall_fcn, iters = iters, criteria = crit)
+
 # helper.grind(prefixes = prefixes, suffixes = suffixes, 
 # 	model = model, iters = iters, criteria = crit, 
 # 	test_points = test_points)
-helper.evaluate()
