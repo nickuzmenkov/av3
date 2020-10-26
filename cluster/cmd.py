@@ -45,7 +45,7 @@ test_points = {
 ''' ======================== '''
 
 helper = Helper(
-	folder = '../cls', cls_folder = cls_folder, cls_script = cls_script,
+	folder = '../../../cls', cls_folder = cls_folder, cls_script = cls_script,
 	local = is_local, hours = hours_count, partition = partition, cpus = num_cpus,
 	cyclic = is_cyclic, dim=dim,
 	h_keys = h_keys, p_keys = p_keys, r_keys = r_keys)
