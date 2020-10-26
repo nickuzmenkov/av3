@@ -1,129 +1,96 @@
-﻿class designParameter:
+﻿''' -------------------------------------------------------
+define helpful classes
+------------------------------------------------------- '''
+''' parameter class '''
+class Parameter():
 
-	param_types = {
-		'height':	Parameters.GetParameter(Name = "P34"),
-		'pitch':	Parameters.GetParameter(Name = "P40"),
-		'layer':	Parameters.GetParameter(Name = "P41"),
-		'length':	Parameters.GetParameter(Name = "P42")
-	}
-
-	def __init__(self, name, dictionary):
+	def __init__(self, number):
 		self.designPoint = Parameters.GetDesignPoint(Name = '0')
-		self.parameter = designParameter.param_types.get(name)
-		self.dictionary = dictionary
+		self.key = Parameters.GetParameter(Name='P{}'.format(number))
 
-	def set_parameter(self, val_key, multiplyer = 1, units='m'):
+	def set(self, value, multiplyer = 1, units='m'):
 		self.designPoint.SetParameterExpression(
-			Parameter = self.parameter,
-			Expression = '{} [{}]'.format(self.dictionary.get(val_key) * multiplyer, units)
+			Parameter = self.key,
+			Expression = '{} [{}]'.format(value * multiplyer, units)
 		)
 
-class designSystem:
+''' geometry class '''
+class Geometry():
 
-	path = 'C:\\\\users\\\\frenc\\\\yandexdisk\\\\ans\\\\msh\\\\{}.msh'
+	def __init__(self, parent):
+		self.geometry = parent.system.GetContainer(ComponentName='Geometry')
 
-	cmd = 'DS = WB.AppletList.Applet("DSApplet").App;\nvar meshBranch = DS.Tree.FirstActiveBranch.MeshControlGroup;\nvar filename = "{}";\nDS.Script.doFileExport(filename);'
+	def set(self, path):
+		self.geometry.SetFile(FilePath=path)
 
-	heights = {
-		# '00': .1e-4,
-		'10': .1e-3,
-		'20': .2e-3,
-		'30': .3e-3,
-		'40': .4e-3,
-		'50': .5e-3,
-		'60': .6e-3
-	}
+''' mesh class '''
+class Mesh():
 
-	pitches = {
-		# '000': 1e-3,
-		'025': 2.5e-3,
-		'050': 5e-3,
-		'075': 7.5e-3,
-		'100': 10e-3,
-		'125': 12.5e-3,
-		'150': 15e-3
-	}
+	def __init__(self, parent):
+		self.mesh = parent.system.GetContainer(ComponentName='Mesh')
 
-	layers = {
-		'010': 0.0159011e-3,
-		'020': 0.0086701e-3,
-		'040': 0.0047274e-3,
-		'100': 0.0021204e-3,
-		'200': 0.0011562e-3,
-		'400': 0.0006304e-3
-	}
+	def export(self, path):
+		cmd = 'DS = WB.AppletList.Applet("DSApplet").App;\nvar meshBranch = DS.Tree.FirstActiveBranch.MeshControlGroup;\nvar filename = "{}";\nDS.Script.doFileExport(filename);'
+		path = path.replace('\\', '\\\\')
+		self.mesh.SendCommand(Command=cmd.format(path))
 
-	lengths = {
-		'100': 100e-3
-	}
+''' system class '''
+class System():
 
-	def __init__(self, sys, sys_type):
-		self.system = sys
-		self.sys_type = sys_type
-		self.mesh = sys.GetContainer(ComponentName = 'Mesh')
+	def __init__(self, name, parameters):
+		self.system = GetSystem(Name=name)
+		self.geometry = Geometry(self)
+		self.mesh = Mesh(self)
 
-		self.height = designParameter('height', designSystem.heights)
-		self.pitch = designParameter('pitch', designSystem.pitches)
-		self.layer = designParameter('layer', designSystem.layers)
-		self.length = designParameter('length', designSystem.lengths)
+		for key, value in parameters:
+			self.__setattr__(key, Parameter(value))
 
-		self.height_key	= '000'
-		self.pitch_key	= '000'
-		self.layer_key	= '000'
-		self.prefix		= ''
+''' -------------------------------------------------------
+START FROM HERE
+------------------------------------------------------- '''
+''' define loop parameters '''
+heights = {
+	'50': .5e-3,
+}
 
-	def case(self):
-		return '{}-{}-{}-{}{}'.\
-			format(self.sys_type,  self.height_key, self.pitch_key, self.layer_key, self.prefix)
+pitches = {
+	'100': 10e-3,
+}
 
-	def set_prefix(self, multiplyer):
-		self.prefix = '-{}'.format(multiplyer)
+layers = {
+	'010': 0.0159011e-3,
+	'020': 0.0086701e-3
+}
 
-	def export_mesh(self, path=''):
-		if path == '':
-			path = designSystem.path.format(self.case())
-		self.mesh.SendCommand(Command = designSystem.cmd.format(path))
+''' define system parameters '''
+parameters={
+	'radius': 10,
+	'height': 11,
+	'pitch': 12,
+	'delta': 13,
+	'layer': 18
+}
 
-	def export_cyclic(self, h_keys = list(heights.keys()), p_keys = list(pitches.keys()), l_keys = list(layers.keys()), multiplyers = [1]):
-		self.mesh.Edit()
+''' define root directory '''
+path = '/aviator3/projects/MLearning_CFD-2020/'
 
-		for h_key in h_keys:
-			self.height_key = h_key
-			self.height.set_parameter(h_key)
+''' define system '''
+pipe = System('SYS', parameters)
 
-			for p_key in p_keys:
-				self.pitch_key = p_key
-				self.pitch.set_parameter(p_key)
+''' -------------------------------------------------------
+main loop
+------------------------------------------------------- '''
+for p_key, p_val in pitches.items():
+	pipe.pitch.set(p_val)
 
-				for l_key in l_keys:
-					self.layer_key = l_key
+	for h_key, h_val in heights.items():
+		pipe.height.set(h_val)
 
-					try:
-						multiplyers[1]
-						for multiplyer in multiplyers:
-							self.layer.set_parameter(l_key, multiplyer)
-							self.set_prefix(multiplyer)
+		pipe.geometry.set('geo/{}-{}.scdoc'.\
+			format(h_key, p_key))
 
-							self.system.Update()
-							self.export_mesh()
-
-					except IndexError:
-						self.layer.set_parameter(l_key, multiplyers[0])
-
-						self.system.Update()
-						self.export_mesh()	
-						
-		self.mesh.Exit()
-
-# SYSTEMS
-# --------------------------------------------------------
-sysStab	= designSystem(GetSystem(Name='SYS 1'), 'STAB')
-sysRec	= designSystem(GetSystem(Name='SYS'), 'REC')
-sysCut	= designSystem(GetSystem(Name='SYS 3'), 'CUT')
-sysFlat	= designSystem(GetSystem(Name='SYS 2'), 'FLAT')
-
-sysRec.export_cyclic(h_keys = ['10', '50'], p_keys = ['100'], 
-	l_keys = ['010', '100', '400'], multiplyers = [30])
-
-sysStab.export_cyclic(h_keys = ['10', '50'], p_keys = ['100'], 
-	l_keys = ['010', '100', '400'], multiplyers = [30])
+		for l_key, l_val in layers.items():
+			pipe.layer.set(l_val)
+			pipe.system.Update()
+			pipe.mesh.export('/msh/{}-{}-{}.msh'.\
+				format(h_key, p_key, l_key))

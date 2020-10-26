@@ -116,7 +116,7 @@ eval export > export.$SLURM_JOBID.txt
 echo =
 cat $PBS_NODEFILE
 echo =
-$ANSYS_HOME/v182/fluent/bin/fluent 2d -g -t[cpus] -pib -mpi=intel "-cnf=$PBS_NODEFILE" -i "cmd.jou"
+$ANSYS_HOME/v182/fluent/bin/fluent [dim]d -g -t[cpus] -pib -mpi=intel "-cnf=$PBS_NODEFILE" -i "cmd.jou"
 [postscript]
 echo "stop  :" `date` >> log_job.$SLURM_JOBID.txt
 echo #
