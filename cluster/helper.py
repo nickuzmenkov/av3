@@ -160,7 +160,7 @@ class Helper():
 				jou._cmd += [f'/mesh/translate 0 0 {Helper.pitches.get(p_key)} ']
 			else:
 				jou.mesh.translate.set(Helper.pitches.get(p_key), 0)
-			jou.mesh.modify_zones.append_mesh.set(f'../msh/{name}.msh')
+			jou.mesh.modify_zones.append_mesh.set(f'../../../msh/{name}.msh')
 			jou.mesh.modify_zones.merge_zones.set('fluid', 'fluid.1')
 			if self.dim == 2:
 				jou.mesh.modify_zones.merge_zones.set('axis', 'axis.1')
@@ -178,7 +178,7 @@ class Helper():
 				jou._cmd += [f'/mesh/translate 0 0 {Helper.pitches.get(p_key)} ']
 			else:
 				jou.mesh.translate.set(Helper.pitches.get(p_key), 0)
-			jou.mesh.modify_zones.append_mesh.set(f'../msh/{name}.msh')
+			jou.mesh.modify_zones.append_mesh.set(f'../../../msh/{name}.msh')
 			jou.mesh.modify_zones.merge_zones.set('fluid', 'fluid.1')
 			jou.mesh.modify_zones.merge_zones.set('solid', 'solid.1')
 			if self.dim == 2:
@@ -200,7 +200,7 @@ class Helper():
 				jou._cmd += [f'/mesh/translate 0 0 {.1} ']
 			else:
 				jou.mesh.translate.set(.1, 0)
-			jou.mesh.modify_zones.append_mesh.set(f'../msh/{name}.msh')
+			jou.mesh.modify_zones.append_mesh.set(f'../../../msh/{name}.msh')
 			jou.mesh.modify_zones.merge_zones.set('fluid', 'fluid.1')
 			if self.dim == 2:
 				jou.mesh.modify_zones.merge_zones.set('axis', 'axis.1')
@@ -215,8 +215,8 @@ class Helper():
 		def underloop(name, h_key, p_key, r_key, suffix):
 			jou = pj.Journal()
 
-			jou.file.read_case.set('../cas/start.cas')
-			jou.file.mesh_replace.set(f'../msh/{stab_name}-{h_key}-100-{r_key}.msh')
+			jou.file.read_case.set('../../../cas/start.cas')
+			jou.file.mesh_replace.set(f'../../../msh/{stab_name}-{h_key}-100-{r_key}.msh')
 
 			jou += sec_first(f'{test_name}-{name}', p_key)
 			section_nth = sec_nth(f'{test_name}-{name}', p_key)
@@ -234,8 +234,8 @@ class Helper():
 			jou.define.boundary_conditions.wall.set('wall-solid', 1000, fluid = False)
 			jou.define.boundary_conditions.wall.set('wall-out', 1000)
 
-			jou.file.write_case.set(f'../cas/{name}.cas')
-			jou.save(f'../cls/cmd-{name}.jou')	
+			jou.file.write_case.set(f'../../../cas/{name}.cas')
+			jou.save(f'../../../cls/cmd-{name}.jou')	
 
 		master = pj.Journal()
 		names = []
@@ -250,7 +250,7 @@ class Helper():
 							names += [name]
 							underloop(name, h_key, p_key, r_key, suffix)
 
-		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
+		master.file.read_journal.set('\n'.join([f'../../../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def solve(self, **kwargs):
@@ -269,7 +269,7 @@ class Helper():
 		def underloop(name, r_key):
 			jou = pj.Journal()
 
-			jou.file.read_case.set(f'../cas/{name}.cas')
+			jou.file.read_case.set(f'../../../cas/{name}.cas')
 
 			jou.define.models.viscous.set(model)
 			if model in ['ke-standard', 'ke-rng', 'ke-realizable']:
@@ -290,13 +290,13 @@ class Helper():
 			jou.solve.initialize.initialize_flow.set()
 			jou.solve.iterate.set(iters)
 
-			jou.report.surface_integrals.area.set(f'../out/out-{name}.txt', 'wall-fluid', 'wall-solid')
-			jou.report.fluxes.heat_transfer.set(f'../out/out-{name}.txt', 'wall-fluid', 'wall-solid')
-			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'temperature', 'axis')
-			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'pressure', 'cut-1', 'cut-2')
+			jou.report.surface_integrals.area.set(f'../../../out/out-{name}.txt', 'wall-fluid', 'wall-solid')
+			jou.report.fluxes.heat_transfer.set(f'../../../out/out-{name}.txt', 'wall-fluid', 'wall-solid')
+			jou.report.surface_integrals.facet_avg.set(f'../../../out/out-{name}.txt', 'temperature', 'axis')
+			jou.report.surface_integrals.facet_avg.set(f'../../../out/out-{name}.txt', 'pressure', 'cut-1', 'cut-2')
 			
-			jou.file.write_case_data.set(f'../cas/{name}.cas')
-			jou.save(f'../cls/cmd-{name}.jou')
+			jou.file.write_case_data.set(f'../../../cas/{name}.cas')
+			jou.save(f'../../../cls/cmd-{name}.jou')
 
 		master = pj.Journal()
 		names = []
@@ -311,7 +311,7 @@ class Helper():
 							names += [name]
 							underloop(name, r_key)
 
-		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
+		master.file.read_journal.set('\n'.join([f'../../../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def solve_flat(self, **kwargs):
@@ -330,8 +330,8 @@ class Helper():
 		def underloop(name, r_key):
 			jou = pj.Journal()
 
-			jou.file.read_case.set('../cas/start.cas')
-			jou.file.mesh_replace.set(f'../msh/FLAT-{name}.msh')
+			jou.file.read_case.set('../../../cas/start.cas')
+			jou.file.mesh_replace.set(f'../../../msh/FLAT-{name}.msh')
 
 			jou.define.models.viscous.set(model)
 			if model in ['ke-standard', 'ke-rng', 'ke-realizable']:
@@ -353,13 +353,13 @@ class Helper():
 			jou.solve.initialize.initialize_flow.set()
 			jou.solve.iterate.set(iters)
 
-			jou.report.surface_integrals.area.set(f'../out/out-{name}.txt', 'wall')
-			jou.report.fluxes.heat_transfer.set(f'../out/out-{name}.txt', 'wall')
-			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'temperature', 'axis')
-			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'pressure', 'cut-1', 'cut-2')
+			jou.report.surface_integrals.area.set(f'../../../out/out-{name}.txt', 'wall')
+			jou.report.fluxes.heat_transfer.set(f'../../../out/out-{name}.txt', 'wall')
+			jou.report.surface_integrals.facet_avg.set(f'../../../out/out-{name}.txt', 'temperature', 'axis')
+			jou.report.surface_integrals.facet_avg.set(f'../../../out/out-{name}.txt', 'pressure', 'cut-1', 'cut-2')
 			
-			jou.file.write_case_data.set(f'../cas/{name}.cas')
-			jou.save(f'../cls/cmd-{name}.jou')
+			jou.file.write_case_data.set(f'../../../cas/{name}.cas')
+			jou.save(f'../../../cls/cmd-{name}.jou')
 
 		master = pj.Journal()
 		names = []
@@ -372,7 +372,7 @@ class Helper():
 					names += [name]
 					underloop(name, r_key)
 
-		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
+		master.file.read_journal.set('\n'.join([f'../../../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def grind(self, **kwargs):
@@ -392,8 +392,8 @@ class Helper():
 		def underloop(name, r_key):
 
 			jou = pj.Journal()
-			jou.file.read_case.set('../cas/start.cas')
-			jou.file.mesh_replace.set(f'../msh/{name}.msh')
+			jou.file.read_case.set('../../../cas/start.cas')
+			jou.file.mesh_replace.set(f'../../../msh/{name}.msh')
 			
 			jou.define.models.viscous.set(model)
 			if model in ['ke-standard', 'ke-rng', 'ke-realizible']:
@@ -416,13 +416,13 @@ class Helper():
 			jou.solve.initialize.initialize_flow.set()
 			jou.solve.iterate.set(iters)
 
-			jou.report.fluxes.mass_flow.set(f'../out/out-{name}.txt', 'inlet', 'outlet')
-			jou.report.fluxes.heat_transfer.set(f'../out/out-{name}.txt', 'wall-fluid', 'wall-solid', 'inlet', 'outlet')
-			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'temperature', ' '.join(list(test_points.keys())))
-			jou.report.surface_integrals.facet_avg.set(f'../out/out-{name}.txt', 'pressure', 'inlet', 'outlet')
+			jou.report.fluxes.mass_flow.set(f'../../../out/out-{name}.txt', 'inlet', 'outlet')
+			jou.report.fluxes.heat_transfer.set(f'../../../out/out-{name}.txt', 'wall-fluid', 'wall-solid', 'inlet', 'outlet')
+			jou.report.surface_integrals.facet_avg.set(f'../../../out/out-{name}.txt', 'temperature', ' '.join(list(test_points.keys())))
+			jou.report.surface_integrals.facet_avg.set(f'../../../out/out-{name}.txt', 'pressure', 'inlet', 'outlet')
 			
-			jou.file.write_case_data.set(f'../cas/{name}.cas')
-			jou.save(f'../cls/cmd-{name}.jou')
+			jou.file.write_case_data.set(f'../../../cas/{name}.cas')
+			jou.save(f'../../../cls/cmd-{name}.jou')
 
 		master = pj.Journal()
 		names = []
@@ -437,7 +437,7 @@ class Helper():
 							names += [name]
 							underloop(name, r_key)
 
-		master.file.read_journal.set('\n'.join([f'../cls/cmd-{x}.jou' for x in names]))
+		master.file.read_journal.set('\n'.join([f'../../../cls/cmd-{x}.jou' for x in names]))
 		master.save(self.folder + '/cmd.jou')
 
 	def evaluate(self, **kwargs):
@@ -466,11 +466,11 @@ class Helper():
 			return Nu, f 
 
 		def underloop(name, r_key, file):
-			vals = file_eval(f'../out/out-{name}.txt', r_key)
+			vals = file_eval(f'../../../out/out-{name}.txt', r_key)
 			vals = ['%.4f' % x for x in vals]
 			file.write(f'{name}:\t' + '\t'.join(vals) + '\n')
 
-		with open('../out/out.txt', 'w') as f:
+		with open('../../../out/out.txt', 'w') as f:
 			for prefix in prefixes:
 				for h_key in self.h_keys:
 					for p_key in self.p_keys:
@@ -503,11 +503,11 @@ class Helper():
 			return [heat*1e-2/area/(1000 - temp)/0.0242, 2*pres*pi*1e-4/area/1.225/Helper.reynolds.get(r_key)**2]
 
 		def underloop(name, r_key, file):
-			vals = file_eval(f'../out/out-{name}.txt', r_key)
+			vals = file_eval(f'../../../out/out-{name}.txt', r_key)
 			vals = ['%.4f' % x for x in vals]
 			file.write(f'{name}:\t' + '\t'.join(vals) + '\n')
 
-		with open('../out/out.txt', 'w') as f:
+		with open('../../../out/out.txt', 'w') as f:
 			for prefix in prefixes:
 				for h_key in self.h_keys:
 					for p_key in self.p_keys:

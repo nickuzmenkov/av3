@@ -29,6 +29,12 @@ class Mesh():
 	def __init__(self, parent):
 		self.mesh = parent.system.GetContainer(ComponentName='Mesh')
 
+	def edit(self):
+		self.mesh.Edit()
+
+	def exit(self):
+		self.mesh.Exit()
+
 	def export(self, path):
 		cmd = 'DS = WB.AppletList.Applet("DSApplet").App;\nvar meshBranch = DS.Tree.FirstActiveBranch.MeshControlGroup;\nvar filename = "{}";\nDS.Script.doFileExport(filename);'
 		path = path.replace('\\', '\\\\')
@@ -42,24 +48,28 @@ class System():
 		self.geometry = Geometry(self)
 		self.mesh = Mesh(self)
 
-		for key, value in parameters:
-			self.__setattr__(key, Parameter(value))
+		for key, value in parameters.items():
+			setattr(self, key, Parameter(value))
 
 ''' -------------------------------------------------------
 START FROM HERE
 ------------------------------------------------------- '''
 ''' define loop parameters '''
 heights = {
-	'50': .5e-3,
+	'10': .1e-3,
+	'20': .2e-3,
+	'30': .3e-3,
+	'40': .4e-3,
+	'50': .5e-3
 }
 
 pitches = {
-	'100': 10e-3,
+	'100': 10e-3
 }
 
 layers = {
-	'010': 0.0159011e-3,
-	'020': 0.0086701e-3
+	'010': 0.0159011e-3 * 2,
+	'020': 0.0086701e-3 * 2
 }
 
 ''' define system parameters '''
@@ -72,7 +82,7 @@ parameters={
 }
 
 ''' define root directory '''
-path = '/aviator3/projects/MLearning_CFD-2020/'
+path = 'c:\\users\\frenc\\yandexdisk\\cfd\\'
 
 ''' define system '''
 pipe = System('SYS', parameters)
@@ -80,17 +90,21 @@ pipe = System('SYS', parameters)
 ''' -------------------------------------------------------
 main loop
 ------------------------------------------------------- '''
+pipe.mesh.edit()
+
 for p_key, p_val in pitches.items():
 	pipe.pitch.set(p_val)
 
 	for h_key, h_val in heights.items():
 		pipe.height.set(h_val)
 
-		pipe.geometry.set('geo/{}-{}.scdoc'.\
+		pipe.geometry.set(path + 'geo\\{}-{}.scdoc'.\
 			format(h_key, p_key))
 
 		for l_key, l_val in layers.items():
 			pipe.layer.set(l_val)
 			pipe.system.Update()
-			pipe.mesh.export('/msh/{}-{}-{}.msh'.\
+			pipe.mesh.export(path + 'msh\\{}-{}-{}.msh'.\
 				format(h_key, p_key, l_key))
+
+pipe.mesh.exit()
