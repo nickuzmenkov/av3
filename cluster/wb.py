@@ -1,4 +1,6 @@
-﻿''' -------------------------------------------------------
+﻿import time
+
+''' -------------------------------------------------------
 define helpful classes
 ------------------------------------------------------- '''
 ''' parameter class '''
@@ -55,37 +57,46 @@ class System():
 START FROM HERE
 ------------------------------------------------------- '''
 ''' define loop parameters '''
-heights = {
-	'10': .1e-3,
-	'20': .2e-3,
-	'30': .3e-3,
-	'40': .4e-3,
-	'50': .5e-3
-}
+heights = {'10': .1e-3,
+		   '20': .2e-3,
+		   '30': .3e-3,
+		   '40': .4e-3,
+		   '50': .5e-3, 
+		   '60': .6e-3,
+		   '70': .7e-3}
 
-pitches = {
-	'100': 10e-3
-}
+pitches = {'025': 2.5e-3,
+		   '050': 5.0e-3,
+		   '100': 10e-3,
+		   '150': 15e-3}
 
-layers = {
-	'010': 0.0159011e-3 * 2,
-	'020': 0.0086701e-3 * 2
-}
+# layers = {'10': 1.59E-05,
+# 		  '20': 8.67E-06,
+# 		  '30': 6.08E-06,
+# 		  '40': 4.73E-06,
+# 		  '50': 3.89E-06,
+# 		  '60': 3.32E-06}
+layer = 3.32e-6
 
 ''' define system parameters '''
-parameters={
-	'radius': 10,
-	'height': 11,
-	'pitch': 12,
-	'delta': 13,
-	'layer': 18
-}
+# parameters={'radius': 7,
+# 			'height': 9,
+# 			'pitch': 8,
+# 			'delta': 10,
+# 			'layer': 11}
+parameters={'radius': 10,
+			'height': 11,
+			'pitch':  12,
+			'delta':  13,
+			'layer':  18}
 
 ''' define root directory '''
 path = 'c:\\users\\frenc\\yandexdisk\\cfd\\'
+mode = 'V'
+# path = '..\\'
 
 ''' define system '''
-pipe = System('SYS', parameters)
+pipe = System('SYS 1', parameters)
 
 ''' -------------------------------------------------------
 main loop
@@ -98,13 +109,13 @@ for p_key, p_val in pitches.items():
 	for h_key, h_val in heights.items():
 		pipe.height.set(h_val)
 
-		pipe.geometry.set(path + 'geo\\{}-{}.scdoc'.\
-			format(h_key, p_key))
+		pipe.geometry.set(path + 'geo\\2{}-{}-{}.scdoc'.\
+			format(mode, h_key, p_key))
 
-		for l_key, l_val in layers.items():
-			pipe.layer.set(l_val)
-			pipe.system.Update()
-			pipe.mesh.export(path + 'msh\\{}-{}-{}.msh'.\
-				format(h_key, p_key, l_key))
+		pipe.layer.set(layer)
+		pipe.system.Update()
+		pipe.mesh.export(path + 'msh\\2{}-{}-{}.msh'.\
+			format(mode, h_key, p_key))
 
+time.sleep(5)
 pipe.mesh.exit()

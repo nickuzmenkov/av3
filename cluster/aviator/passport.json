@@ -1,0 +1,18 @@
+{
+    "cluster": "aviator3",
+    "comment": "",
+    "method": "RANS",
+    "nodes_count": "1",
+    "partition": "skylake",
+    "path": "/aviator3/projects/MLearning_CFD-2020/cls",
+    "problem_name": "MLearning_CFD-2020",
+    "requeue": true,
+    "resource": "(null)",
+    "run_file": "/aviator3/projects/MLearning_CFD-2020/cls/cmd.sh",
+    "soft": "Fluent",
+    "time": "3-00:00:00",
+    "user": "nvkuzmenkov",
+    "work_name": "MLearning_CFD-2020",
+    "Используемое ПО": "Ansys_Fluent",
+    "Класс задачи": "Гидродинамика / Однофазные течения"
+}

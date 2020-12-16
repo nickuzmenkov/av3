@@ -1,79 +1,50 @@
-from helper_min import Helper
+from aviator import Aviator
 
-case = '50-100'
-velocity = 20
-meshes = [
-	'10-100-010',
-	'20-100-010',
-	'30-100-010',
-	'40-100-010',
-	'50-100-010'
-]
+''' start code here
+================================================================= '''
 
-helper = Helper('c:/users/frenc/yandexdisk/cfd/cls')
+dim = int(input('dim: '))
+mod = input('mod: ')
+folder = input('dir: ')
 
-helper.add_solver(case, 20, mesh='50-100-010')
-helper.add_reporter('50-100-010')
-helper.execute()
+rs = {
+    '1': {20: '10', 40: '20'},
+    '2': {60: '30', 80: '40'},
+    '3': {100: '50', 120: '60'}
+}
 
-# ''' ======================== '''
+rs = rs[input('Reynolds Group: ')]
 
-# dim = 3
-# cls_folder	= True
-# is_local	= False
+start_case = f'{dim}S-00-000'
+hs = ['10', '20', '30', '40', '50', '60', '70']
+ps = ['025', '050', '100', '150']
 
-# ''' ======================== '''
+partition = input('Partition (cascadelake): ')
+nodes = input('Nodes (1): ')
+hours = input('Hours (24): ')
 
-# cls_script	= True
-# hours_count	= 2
-# partition	= 'cascadelake'
-# num_cpus	= None
+partition = partition if partition != '' else 'cascadelake'
+nodes = int(nodes) if nodes != '' else 1
+hours = int(hours) if hours != '' else 24
 
-# ''' ======================== '''
+''' end code here
+================================================================= '''
 
-# is_cyclic	= False
-# h_keys		= ['50']
-# p_keys		= ['100']
-# r_keys		= ['010']
+''' do not change anything
+================================================================= '''
 
-# ''' ======================== '''
+root = 'c:/users/frenc/yandexdisk/cfd/'
+helper = Aviator(root + folder, start_case)
 
-# stab_name	= 'STAB'
-# test_name	= 'REC'
+for h in hs:
+    for p in ps:
+        for vel, re in rs.items():
+            msh = f'{dim}{mod}-{h}-{p}'
+            job = f'{dim}{mod}-{h}-{p}-{re}'
+            helper.job(job, msh, vel)
 
-# ''' ======================== '''
+helper.execute(partition=partition, nodes=nodes, 
+               dim=dim, hours=hours)
 
-# model	= 'spalart-allmaras'
-# wall_fcn = 'standard'
-# crit	= 1e-6
-# iters	= 1000
-
-# ''' ======================== '''
-
-# prefixes = [None]
-# suffixes = [None]
-# test_points = { 
-# 	'point-1': (0.008, .0047),
-# 	'point-2': (0.009, .0047),
-# 	'point-3': (0.010, .0047)
-# }
-
-# ''' ======================== '''
-
-# helper = Helper(
-# 	folder = '../../../cls', cls_folder = cls_folder, cls_script = cls_script,
-# 	local = is_local, hours = hours_count, partition = partition, cpus = num_cpus,
-# 	cyclic = is_cyclic, dim=dim,
-# 	h_keys = h_keys, p_keys = p_keys, r_keys = r_keys)
-
-# # helper.evaluate(suffixes = suffixes)
-
-# # helper.evaluate_flat(suffixes = suffixes)
-
-# # helper.build(test_name, stab_name, prefixes = prefixes, suffixes = suffixes)
-
-# helper.solve(prefixes = prefixes, suffixes = suffixes, model = model, wall_function = wall_fcn, iters = iters, criteria = crit)
-
-# # helper.solve_flat(prefixes = prefixes, suffixes = suffixes, model = model, wall_function = wall_fcn, iters = iters, criteria = crit)
-
-# # helper.grind(prefixes = prefixes, suffixes = suffixes, model = model, wall_function = wall_fcn, iters = iters, criteria = crit)
+''' do not change anything
+================================================================= '''
