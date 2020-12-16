@@ -19,61 +19,57 @@ class Log():
     def __init__(self, partition):
         self.partition = partition
         with open('log.out', 'w') as file:
-            file.write(f'Py Log\n{self.clock()}')
+            file.write(f'{self.clock()} LOGGING\n')
 
     
     @staticmethod
     def clock():
         now = datetime.now()
-        return now.strftime("%d/%m/%Y %H:%M:%S\n")
-
-
-    @property
-    def job_id(self):
-        return glob('*.out')[-1]
+        return now.strftime("%d/%m/%Y %H:%M:%S")
     
 
     @property
     def log(self):
-        with open(f'slurm-{self.job_id}.out', encoding='UTF8') as f:
-            log = f.readlines()
-            log.reverse()
-            return log
+        while 1:
+            try:
+                with open(f'slurm-{self.job_id}.out', encoding='UTF8') as f:
+                    log = f.readlines()
+                    log.reverse()
+                    return log
+            except FileNotFoundError:
+                time.sleep(60)
 
 
     @property    
     def jou(self):
         with open('cmd.jou') as f:
             jou = f.readlines()
-            jou.reverse()
             return jou
 
 
     @jou.setter
     def jou(self, cmd):
-        with open('cmd.jou') as f:
+        with open('cmd.jou', 'w') as f:
             f.writelines(cmd)
 
 
     def note(self):
         with open('log.out', 'a') as f:
-            file.write(f'Failed job {self.last_call}\n')
+            f.write(f'{self.clock()} Failed job {self.last_call()}\n')
 
 
     def watch(self, check_delay=60):
-        time.sleep(300)
         while 1:
             time.sleep(check_delay)
             if any([x for x in self.log if x in self.WARN]):
                 self.note()
                 self.checkpoint()
-                break
 
 
     def last_call(self):
         for line in self.log:
             if self.last.fullmatch(line):
-                return self.name.search(line)
+                return self.name.search(line).group(0)
 
 
     def trunc(self):
@@ -90,19 +86,18 @@ class Log():
 
 
     def cancel_job(self):
-        subprocess.run(f'scancel {self.job_id}')
+        subprocess.run(f'scancel {self.job_id}', shell=True)
 
 
     def submit_job(self):
-        subprocess.run(f'sbatch --partition={self.partition} cmd.sh',
-                       shell=True)
+        p = subprocess.run(f'sbatch --partition={self.partition} cmd.sh', shell=True, capture_output=True, text=True)
+        self.job_id = p.stdout.split(' ')[-1]
 
 
     def checkpoint(self):
-        self.cancel_job()
+        self.cancel_job(self.job_id)
         if self.trunc():
             self.submit_job()
-            self.watch()
 
 
 #---------------
